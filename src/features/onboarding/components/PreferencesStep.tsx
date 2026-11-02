@@ -129,11 +129,11 @@ export function PreferencesStep({
         />
       </fieldset>
 
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={onBack} className="flex-1">
+      <div className="flex items-center justify-between gap-2">
+        <Button type="button" variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button type="submit" className="flex-1" disabled={submitting}>
+        <Button type="submit" disabled={submitting}>
           {submitting ? 'Generating your budget…' : 'Create my budget'}
         </Button>
       </div>

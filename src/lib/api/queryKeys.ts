@@ -41,6 +41,8 @@ export const groceryKeys = {
   all: ['groceries'] as const,
   list: () => [...groceryKeys.all, 'list'] as const,
   compare: () => [...groceryKeys.all, 'compare'] as const,
+  /** Deliberately outside `all`: editing the list never changes the catalog. */
+  catalog: () => ['groceryCatalog'] as const,
 }
 
 export const productKeys = {

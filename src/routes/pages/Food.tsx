@@ -6,14 +6,15 @@ import { Tabs } from '@/components/ui/tabs'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Button } from '@/components/ui/button'
-import { FilterBar } from '@/components/FilterBar'
+import { FilterBar, FilterChips } from '@/components/FilterBar'
+import { Pagination } from '@/components/Pagination'
 import { ListingCard } from '@/components/ListingCard'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorState } from '@/components/ErrorState'
 import { useNearbyFood } from '@/features/food/hooks/useFood'
 import { useAreas } from '@/hooks/useAreas'
 import type { FoodPlaceType, FoodSort, NearAnchor } from '@/types/food'
+import { formatINR } from '@/utils/currency'
 
 const tabs: Array<{ value: FoodPlaceType | 'all'; label: string }> = [
   { value: 'all', label: 'All' },
@@ -68,7 +69,7 @@ export default function FoodPage() {
   const total = food.data?.meta.total ?? 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <SeoTitle title="Food" description="Cheap good meals near home and office." />
       <PageHeader
         title="Food"
@@ -79,78 +80,104 @@ export default function FoodPage() {
         }
       />
 
-      <Tabs
-        label="Place type"
-        items={tabs}
-        value={type}
-        onChange={(value) => setParam('type', value)}
-      />
-
-      <FilterBar activeCount={activeCount} onClear={clearFilters}>
-        <div className="min-w-[150px] flex-1 space-y-1.5">
-          <label htmlFor="food-near" className="text-sm font-medium">
+      {/* Primary controls stay inline; the rest live behind one Filters button. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs
+          label="Place type"
+          items={tabs}
+          value={type}
+          onChange={(value) => setParam('type', value)}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="food-near" className="sr-only">
             Near
           </label>
-          <Select id="food-near" value={near} onChange={(e) => setParam('near', e.target.value)}>
-            <option value="home">My home</option>
-            <option value="office">My office</option>
-          </Select>
-        </div>
-
-        <div className="min-w-[150px] flex-1 space-y-1.5">
-          <label htmlFor="food-area" className="text-sm font-medium">
-            Area
-          </label>
           <Select
-            id="food-area"
-            value={area}
-            onChange={(e) => setParam('area', e.target.value)}
-            disabled={areas.isPending}
+            id="food-near"
+            value={near}
+            onValueChange={(value) => setParam('near', value)}
+            className="h-9 w-auto min-w-[9.5rem]"
           >
-            <option value="">Any area</option>
-            {areas.data?.areas.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
+            <option value="home">Near my home</option>
+            <option value="office">Near my office</option>
           </Select>
-        </div>
-
-        <div className="min-w-[130px] flex-1 space-y-1.5">
-          <label htmlFor="food-max-price" className="text-sm font-medium">
-            Max per meal
-          </label>
-          <Input
-            id="food-max-price"
-            type="number"
-            inputMode="numeric"
-            placeholder="Any"
-            value={maxPriceRaw}
-            onChange={(e) => setParam('maxPrice', e.target.value)}
-          />
-        </div>
-
-        <div className="min-w-[150px] flex-1 space-y-1.5">
-          <label htmlFor="food-sort" className="text-sm font-medium">
+          <label htmlFor="food-sort" className="sr-only">
             Sort by
           </label>
-          <Select id="food-sort" value={sort} onChange={(e) => setParam('sort', e.target.value)}>
+          <Select
+            id="food-sort"
+            value={sort}
+            onValueChange={(value) => setParam('sort', value)}
+            className="h-9 w-auto min-w-[9.5rem]"
+          >
             <option value="price">Cheapest first</option>
             <option value="distance">Nearest first</option>
             <option value="rating">Best rated</option>
           </Select>
+          <FilterBar activeCount={activeCount} onClear={clearFilters}>
+            <div className="space-y-1.5">
+              <label htmlFor="food-area">Area</label>
+              <Select
+                id="food-area"
+                value={area}
+                onValueChange={(value) => setParam('area', value)}
+                disabled={areas.isPending}
+              >
+                <option value="">Any area</option>
+                {areas.data?.areas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="food-max-price">Max per meal</label>
+              <Input
+                id="food-max-price"
+                type="number"
+                inputMode="numeric"
+                placeholder="Any"
+                value={maxPriceRaw}
+                onChange={(e) => setParam('maxPrice', e.target.value)}
+              />
+            </div>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                className="size-4 accent-[var(--primary)]"
+                checked={veg}
+                onChange={(e) => setParam('veg', String(e.target.checked))}
+              />
+              Pure veg only
+            </label>
+          </FilterBar>
         </div>
+      </div>
 
-        <label className="flex h-10 cursor-pointer items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            className="size-4 accent-[var(--primary)]"
-            checked={veg}
-            onChange={(e) => setParam('veg', String(e.target.checked))}
-          />
-          Pure veg only
-        </label>
-      </FilterBar>
+      <FilterChips
+        chips={[
+          ...(area
+            ? [
+                {
+                  key: 'area',
+                  label: areas.data?.areas.find((a) => a.id === area)?.name ?? area,
+                  onRemove: () => setParam('area', ''),
+                },
+              ]
+            : []),
+          ...(maxPrice
+            ? [
+                {
+                  key: 'maxPrice',
+                  label: `Under ${formatINR(maxPrice)}`,
+                  onRemove: () => setParam('maxPrice', ''),
+                },
+              ]
+            : []),
+          ...(veg ? [{ key: 'veg', label: 'Pure veg', onRemove: () => setParam('veg', '') }] : []),
+        ]}
+      />
 
       {food.isPending ? (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -174,7 +201,9 @@ export default function FoodPage() {
         />
       ) : (
         <>
-          <ul className="grid gap-3 lg:grid-cols-2">
+          <ul
+            className={`grid gap-3 transition-opacity lg:grid-cols-2 ${food.isPlaceholderData ? 'opacity-60' : ''}`}
+          >
             {food.data.items.map((listing) => (
               <li key={listing.id}>
                 <ListingCard listing={listing} near={near} />
@@ -182,40 +211,16 @@ export default function FoodPage() {
             ))}
           </ul>
 
-          {food.data.meta.total > food.data.meta.pageSize ? (
-            <nav
-              aria-label="Pagination"
-              className="flex items-center justify-between gap-3 pt-2"
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => {
-                  const next = new URLSearchParams(params)
-                  next.set('page', String(page - 1))
-                  setParams(next, { replace: true })
-                }}
-              >
-                Previous
-              </Button>
-              <p className="text-sm text-muted-foreground">
-                Page {page} of {Math.ceil(food.data.meta.total / food.data.meta.pageSize)}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= Math.ceil(food.data.meta.total / food.data.meta.pageSize)}
-                onClick={() => {
-                  const next = new URLSearchParams(params)
-                  next.set('page', String(page + 1))
-                  setParams(next, { replace: true })
-                }}
-              >
-                Next
-              </Button>
-            </nav>
-          ) : null}
+          <Pagination
+            page={food.data.meta.page}
+            pageSize={food.data.meta.pageSize}
+            total={food.data.meta.total}
+            onPageChange={(next) => {
+              const nextParams = new URLSearchParams(params)
+              nextParams.set('page', String(next))
+              setParams(nextParams, { replace: true })
+            }}
+          />
         </>
       )}
     </div>

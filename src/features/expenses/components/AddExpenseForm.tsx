@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
@@ -9,7 +9,6 @@ import { categoryIds, categoryLabels } from '@/utils/categories'
 import { expenseFormSchema, type ExpenseFormValues } from '../schema'
 import { useCreateExpense } from '../hooks/useExpenses'
 
-
 export interface AddExpenseFormProps {
   onSuccess?: () => void
   onCancel?: () => void
@@ -19,6 +18,7 @@ export function AddExpenseForm({ onSuccess, onCancel }: AddExpenseFormProps) {
   const createExpense = useCreateExpense()
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -55,13 +55,27 @@ export function AddExpenseForm({ onSuccess, onCancel }: AddExpenseFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <Field label="Category" error={errors.category?.message}>
         {({ id, describedBy, invalid }) => (
-          <Select id={id} aria-describedby={describedBy} aria-invalid={invalid} {...register('category')}>
-            {categoryIds.map((key) => (
-              <option key={key} value={key}>
-                {categoryLabels[key]}
-              </option>
-            ))}
-          </Select>
+          <Controller
+            control={control}
+            name="category"
+            render={({ field }) => (
+              <Select
+                id={id}
+                aria-describedby={describedBy}
+                aria-invalid={invalid}
+                name={field.name}
+                value={field.value ?? ''}
+                onValueChange={field.onChange}
+                onBlur={field.onBlur}
+              >
+                {categoryIds.map((key) => (
+                  <option key={key} value={key}>
+                    {categoryLabels[key]}
+                  </option>
+                ))}
+              </Select>
+            )}
+          />
         )}
       </Field>
 
@@ -109,13 +123,13 @@ export function AddExpenseForm({ onSuccess, onCancel }: AddExpenseFormProps) {
         </p>
       ) : null}
 
-      <div className="flex gap-2 pt-2">
+      <div className="flex justify-end gap-2 pt-2">
         {onCancel ? (
-          <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         ) : null}
-        <Button type="submit" className="flex-1" disabled={createExpense.isPending}>
+        <Button type="submit" disabled={createExpense.isPending}>
           {createExpense.isPending ? 'Saving…' : 'Add expense'}
         </Button>
       </div>

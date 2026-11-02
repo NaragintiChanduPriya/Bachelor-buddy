@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { expenseService } from '@/lib/api/services/expenses'
 import { budgetKeys, expenseKeys, notificationKeys, savingsKeys } from '@/lib/api/queryKeys'
 import type { CreateExpenseRequest, ExpenseFilters } from '@/types/expense'
@@ -8,6 +8,8 @@ export function useExpenses(filters: ExpenseFilters) {
     queryKey: expenseKeys.list(filters),
     queryFn: () => expenseService.list(filters),
     staleTime: 30_000,
+    // Keep the current page on screen while the next filter or page loads.
+    placeholderData: keepPreviousData,
   })
 }
 

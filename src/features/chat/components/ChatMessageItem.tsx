@@ -20,19 +20,22 @@ export function ChatMessageItem({ message, onFollowUp }: ChatMessageItemProps) {
       transition={{ duration: reduceMotion ? 0 : 0.25 }}
       className={cn('flex flex-col gap-2', isUser ? 'items-end' : 'items-start')}
     >
+      {/* Your messages sit in a bubble; Buddy's replies read as plain text on the page. */}
       <div
         className={cn(
-          'max-w-[85%] rounded-2xl px-4 py-3 text-sm',
           isUser
-            ? 'rounded-tr-sm bg-primary text-primary-foreground'
-            : 'rounded-tl-sm border border-border bg-card',
+            ? 'max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-primary-foreground'
+            : 'w-full text-[15px] leading-relaxed text-foreground',
         )}
       >
+        {!isUser ? (
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">Buddy</p>
+        ) : null}
         <p className="whitespace-pre-wrap">{message.text}</p>
       </div>
 
       {!isUser && message.steps.length > 0 ? (
-        <details className="max-w-[85%] text-xs text-muted-foreground">
+        <details className="text-xs text-muted-foreground">
           <summary className="cursor-pointer hover:text-foreground">
             How Buddy worked this out
           </summary>
@@ -45,7 +48,7 @@ export function ChatMessageItem({ message, onFollowUp }: ChatMessageItemProps) {
       ) : null}
 
       {message.cards.length > 0 ? (
-        <ul className="w-full max-w-[85%] space-y-2">
+        <ul className="grid w-full gap-2 sm:grid-cols-2">
           {message.cards.map((card, index) => (
             <li key={`${message.id}_card_${index}`}>
               <ChatCardRenderer card={card} />
@@ -55,7 +58,7 @@ export function ChatMessageItem({ message, onFollowUp }: ChatMessageItemProps) {
       ) : null}
 
       {!isUser && message.agentsUsed.length > 0 ? (
-        <div className="flex max-w-[85%] flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground">Agents used:</span>
           {message.agentsUsed.map((agent) => (
             <AgentBadge key={agent} agent={agent} />
@@ -64,7 +67,7 @@ export function ChatMessageItem({ message, onFollowUp }: ChatMessageItemProps) {
       ) : null}
 
       {!isUser && message.suggestedFollowUps.length > 0 ? (
-        <ul className="flex max-w-[90%] flex-wrap gap-2 pt-1">
+        <ul className="flex flex-wrap gap-2 pt-1">
           {message.suggestedFollowUps.map((followUp) => (
             <li key={followUp}>
               <button

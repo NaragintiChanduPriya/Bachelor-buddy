@@ -3,8 +3,9 @@ import type { VariantProps } from 'class-variance-authority'
 import { buttonVariants } from './buttonVariants'
 import { cn } from '@/utils/cn'
 
+/** React 19 passes `ref` as an ordinary prop, so ComponentProps carries it through. */
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends React.ComponentProps<'button'>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }

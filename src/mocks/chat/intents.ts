@@ -1,4 +1,5 @@
 import type { AgentName, ChatCard } from '@/types/chat'
+import type { ProductCategory } from '@/types/product'
 
 export interface IntentMatch {
   id: string
@@ -111,6 +112,23 @@ export function extractAmount(message: string): number | null {
   if (!match?.[1]) return null
   const value = Number.parseInt(match[1], 10)
   return Number.isFinite(value) ? value : null
+}
+
+const categoryKeywords: Array<[ProductCategory, RegExp]> = [
+  ['formalShoes', /\b(formal )?shoes?\b|\boxfords?\b|\bderby\b/],
+  ['shirts', /\bshirts?\b/],
+  ['jeans', /\bjeans\b|\bdenims?\b/],
+  ['backpacks', /\bbackpacks?\b|\blaptop bag\b|\bbags?\b/],
+  ['earphones', /\bearphones?\b|\bearbuds?\b|\bheadphones?\b/],
+  ['watches', /\bwatch(es)?\b/],
+  ['raincoats', /\braincoats?\b|\brain jacket\b/],
+  ['helmets', /\bhelmets?\b/],
+]
+
+/** Maps "formal shoes" or "earbuds" to the product category the Shopping agent searches. */
+export function extractProductCategory(message: string): ProductCategory | null {
+  const text = message.toLowerCase()
+  return categoryKeywords.find(([, pattern]) => pattern.test(text))?.[0] ?? null
 }
 
 /** Finds an area name mentioned in the message, so "near Marathahalli" filters correctly. */

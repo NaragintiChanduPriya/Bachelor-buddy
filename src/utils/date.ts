@@ -23,6 +23,7 @@ const monthYear = new Intl.DateTimeFormat('en-IN', {
   timeZone: IST,
 })
 const weekday = new Intl.DateTimeFormat('en-IN', { weekday: 'long', timeZone: IST })
+const monthShort = new Intl.DateTimeFormat('en-IN', { month: 'short', timeZone: IST })
 
 export function formatDate(iso: string): string {
   return dayMonth.format(new Date(iso))
@@ -48,6 +49,12 @@ export function formatWeekday(iso: string): string {
 export function formatMonthLabel(monthKeyOrIso: string): string {
   const iso = /^\d{4}-\d{2}$/.test(monthKeyOrIso) ? `${monthKeyOrIso}-01` : monthKeyOrIso
   return monthYear.format(new Date(iso))
+}
+
+/** "Oct" from an ISO date or a YYYY-MM key, for chart axes. */
+export function formatMonthShort(monthKeyOrIso: string): string {
+  const iso = /^\d{4}-\d{2}$/.test(monthKeyOrIso) ? `${monthKeyOrIso}-15` : monthKeyOrIso
+  return monthShort.format(new Date(iso))
 }
 
 /** Relative time against a caller-supplied "now" so mock time stays deterministic. */

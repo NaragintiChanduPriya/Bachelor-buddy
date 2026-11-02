@@ -149,6 +149,20 @@ agents, built against `API_CONTRACT.md`. Switching must require only environment
       calc/delivery with reconciling bills, keyword-intent chat matching all 5 briefed queries,
       rich cards + agents-used badges + animated thinking + follow-up chips, floating Ask Buddy
       side sheet / bottom sheet, 4 endpoints)
-- [ ] Phase 4: groceries, shop, deals
-- [ ] Phase 5: homes, savings, notifications, settings
+- [x] Phase 4: groceries, shop, deals
+      (done: 66-item grocery catalog x 4 store types with editable list, store comparison and bulk
+      saving; 32 products x 3 platforms with seeded 90-day history, buy/wait verdict, price alerts;
+      18 offers with eligibility by saved card and server-computed true final price; 10 endpoints
+      incl. GET /groceries/catalog; chat now returns product, offer and grocery-plan cards)
+- [x] Phase 5: homes, savings, notifications, settings
+      (done: 25 homes with area-average comparison and tech-park commutes, /homes/:id; savings goal
+      ring, breakdowns, 6-month chart with table view, canvas PNG export; notifications grouped
+      Today/Earlier with mark read/all; settings form for salary, goal, places, food, cards, theme;
+      chat home search returns home cards)
 - [ ] Phase 6: polish, responsiveness, accessibility, tests, docs
+      (done: UI declutter pass — calm PageHeader, one Filters popover per list page with removable
+      chips, fewer values per card, mobile nav drawer, top bar realigned with profile in the
+      sidebar only, chat only on /chat with plain-text replies, Expenses pagination, Query
+      Devtools opt-in via VITE_QUERY_DEVTOOLS, README + API_CONTRACT complete. Per the user, the
+      demo shortcut and "Reset demo data" were removed from the UI, and no new tests were written
+      or run this phase; e2e specs were updated to onboard through the real form but not run)

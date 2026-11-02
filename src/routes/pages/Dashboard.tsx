@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Receipt, TrendingDown, Wallet } from 'lucide-react'
 import { SeoTitle } from '@/components/SeoTitle'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BudgetBar } from '@/components/BudgetBar'
-import { StatCard } from '@/components/StatCard'
 import { ErrorState } from '@/components/ErrorState'
 import { HeroCard } from '@/features/dashboard/components/HeroCard'
 import { QuickActions } from '@/features/dashboard/components/QuickActions'
@@ -18,7 +16,7 @@ import { useBudget } from '@/features/budget/hooks/useBudget'
 import { useMe } from '@/hooks/useMe'
 import { useMonthlySavings } from '@/hooks/useSavings'
 import { useNotifications } from '@/hooks/useNotifications'
-import { formatINR } from '@/utils/currency'
+import { useNearbyFood } from '@/features/food/hooks/useFood'
 import { greetingForHour } from '@/utils/date'
 
 export default function DashboardPage() {
@@ -40,11 +38,25 @@ export default function DashboardPage() {
   )
   const greeting = greetingForHour(hourIST)
 
-  const mealAlert = notifications.data?.items.find((n) => n.kind === 'mealSuggestion')
-  const topCategories = budget.data?.categories.filter((c) => c.id !== 'savings').slice(0, 7) ?? []
+  // Lunch near the office: nearest places under a typical lunch cap, honouring the food preference.
+  const lunch = useNearbyFood({
+    near: 'office',
+    sort: 'distance',
+    maxPrice: 150,
+    veg: me.data?.preferences.foodPreference === 'veg' || undefined,
+    pageSize: 3,
+  })
+
+  // Only the four day-to-day categories closest to their limit; the Budget page has the rest.
+  // Rent is fixed and savings is a set-aside, so neither needs watching here.
+  const topCategories =
+    budget.data?.categories
+      .filter((c) => c.id !== 'savings' && c.id !== 'rent')
+      .sort((a, b) => b.percentUsed - a.percentUsed)
+      .slice(0, 4) ?? []
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <SeoTitle title="Dashboard" description="Your monthly money at a glance." />
 
       {/* Hero */}
@@ -55,99 +67,82 @@ export default function DashboardPage() {
           onRetry={() => void budget.refetch()}
         />
       ) : budget.isPending || me.isPending ? (
-        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-60 rounded-2xl" />
       ) : (
         <HeroCard budget={budget.data} greeting={greeting} name={me.data?.name ?? 'there'} />
       )}
 
       <QuickActions onLogExpense={() => setExpenseOpen(true)} />
 
-      {/* Stat row */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {budget.isPending ? (
-          <>
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-28 rounded-xl" />
-          </>
-        ) : budget.data ? (
-          <>
-            <StatCard
-              label="Spent this month"
-              amount={budget.data.totalSpent}
-              hint={`${budget.data.percentUsed}% of your ${formatINR(budget.data.totalLimit)} plan`}
-              icon={Receipt}
-            />
-            <StatCard
-              label="Safe to spend daily"
-              amount={budget.data.dailySafeSpend}
-              hint={`Across ${budget.data.daysLeftInMonth} days left`}
-              icon={Wallet}
-              tone="primary"
-            />
-            <StatCard
-              label="Saved so far"
-              amount={savings.data?.saved ?? 0}
-              hint={savings.data ? `${savings.data.percentOfGoal}% of your goal` : 'Loading…'}
-              icon={TrendingDown}
-              tone="success"
-            />
-          </>
-        ) : null}
-      </div>
-
-      {/* Main grid */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      {/* Where the money is going, beside savings. */}
+      <div className="grid items-start gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-4">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-base">Where your money is going</CardTitle>
+              <CardTitle className="text-base">Watch these this month</CardTitle>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/budget">Adjust</Link>
+                <Link to="/budget">Adjust budget</Link>
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {budget.isPending ? (
-              Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14" />)
+              <div className="grid gap-x-10 gap-y-5 sm:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10" />
+                ))}
+              </div>
             ) : budget.isError ? (
               <ErrorState error={budget.error} onRetry={() => void budget.refetch()} />
             ) : (
-              topCategories.map((category) => (
-                <BudgetBar key={category.id} category={category} />
-              ))
+              <div className="grid gap-x-10 gap-y-5 sm:grid-cols-2">
+                {topCategories.map((category) => (
+                  <BudgetBar key={category.id} category={category} variant="compact" />
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          {savings.isPending ? (
-            <Skeleton className="h-56 rounded-xl" />
-          ) : savings.isError ? (
-            <ErrorState error={savings.error} onRetry={() => void savings.refetch()} />
-          ) : (
-            <SavingsGoalCard savings={savings.data} />
-          )}
-
-          {mealAlert ? (
-            <CheapMealCard title={mealAlert.title} body={mealAlert.body} link={mealAlert.link} />
-          ) : notifications.isPending ? (
-            <Skeleton className="h-44 rounded-xl" />
-          ) : null}
-        </div>
+        {savings.isPending ? (
+          <Skeleton className="h-64 rounded-xl" />
+        ) : savings.isError ? (
+          <ErrorState error={savings.error} onRetry={() => void savings.refetch()} />
+        ) : (
+          <SavingsGoalCard savings={savings.data} />
+        )}
       </div>
 
-      {notifications.isPending ? (
-        <Skeleton className="h-64 rounded-xl" />
-      ) : notifications.isError ? (
-        <ErrorState
-          error={notifications.error}
-          title="We could not load your alerts"
-          onRetry={() => void notifications.refetch()}
-        />
-      ) : (
-        <AlertsCard notifications={notifications.data.items} now={now} />
-      )}
+      {/* What the agents found today. */}
+      <div className="grid items-start gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          {notifications.isPending ? (
+            <Skeleton className="h-64 rounded-xl" />
+          ) : notifications.isError ? (
+            <ErrorState
+              error={notifications.error}
+              title="We could not load your alerts"
+              onRetry={() => void notifications.refetch()}
+            />
+          ) : (
+            <AlertsCard notifications={notifications.data.items} now={now} />
+          )}
+        </div>
+
+        {lunch.isError ? (
+          <ErrorState
+            error={lunch.error}
+            title="We could not find lunch nearby"
+            onRetry={() => void lunch.refetch()}
+          />
+        ) : (
+          <CheapMealCard
+            listings={lunch.data?.items}
+            loading={lunch.isPending}
+            officeArea={me.data?.preferences.officeAreaName ?? 'your area'}
+          />
+        )}
+      </div>
 
       <AddExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
     </div>

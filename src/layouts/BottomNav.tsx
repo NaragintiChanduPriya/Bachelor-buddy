@@ -6,7 +6,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_-8px_oklch(0_0_0/0.12)] backdrop-blur-md lg:hidden"
     >
       <ul className="grid grid-cols-5">
         {mobileNav.map((item) => {
@@ -28,16 +28,16 @@ export function BottomNav() {
                   <>
                     <span
                       className={cn(
-                        'flex items-center justify-center rounded-full transition-colors',
+                        'flex items-center justify-center rounded-full transition-all',
                         centre
-                          ? 'size-10 -mt-4 bg-primary text-primary-foreground shadow-lg'
-                          : 'size-6',
-                        !centre && isActive && 'text-primary',
+                          ? 'bg-brand -mt-5 size-12 text-white shadow-raised ring-4 ring-background'
+                          : 'h-7 w-12',
+                        !centre && isActive && 'bg-primary/10',
                       )}
                     >
-                      <Icon className={centre ? 'size-5' : 'size-5'} aria-hidden="true" />
+                      <Icon className="size-5" aria-hidden="true" />
                     </span>
-                    <span>{item.label}</span>
+                    <span className={cn(centre && 'font-semibold text-primary')}>{item.label}</span>
                   </>
                 )}
               </NavLink>
