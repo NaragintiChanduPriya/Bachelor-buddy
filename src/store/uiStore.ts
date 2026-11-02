@@ -1,0 +1,32 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+export type Theme = 'light' | 'dark' | 'system'
+
+interface UiState {
+  theme: Theme
+  sidebarCollapsed: boolean
+  chatSheetOpen: boolean
+  setTheme: (theme: Theme) => void
+  toggleSidebar: () => void
+  setSidebarCollapsed: (collapsed: boolean) => void
+  setChatSheetOpen: (open: boolean) => void
+}
+
+export const useUiStore = create<UiState>()(
+  persist(
+    (set) => ({
+      theme: 'system',
+      sidebarCollapsed: false,
+      chatSheetOpen: false,
+      setTheme: (theme) => set({ theme }),
+      toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+      setChatSheetOpen: (chatSheetOpen) => set({ chatSheetOpen }),
+    }),
+    {
+      name: 'bb-ui',
+      partialize: (s) => ({ theme: s.theme, sidebarCollapsed: s.sidebarCollapsed }),
+    },
+  ),
+)
