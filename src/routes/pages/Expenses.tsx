@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/modal'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorState } from '@/components/ErrorState'
 import { MoneyText } from '@/components/MoneyText'
+import { Pagination } from '@/components/Pagination'
 import { ExpenseList } from '@/features/expenses/components/ExpenseList'
 import { AddExpenseDialog } from '@/features/expenses/components/AddExpenseDialog'
 import { useDeleteExpense, useExpenses } from '@/features/expenses/hooks/useExpenses'
@@ -17,6 +18,7 @@ import { categoryIds, categoryLabels } from '@/utils/categories'
 import type { BudgetCategoryId } from '@/types/budget'
 import type { Expense } from '@/types/expense'
 import { formatMonthLabel } from '@/utils/date'
+import { cn } from '@/utils/cn'
 
 export default function ExpensesPage() {
   // URL query params are the source of truth for list filters.
@@ -28,7 +30,7 @@ export default function ExpensesPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Expense | null>(null)
 
-  const expenses = useExpenses({ category, month, page, pageSize: 50 })
+  const expenses = useExpenses({ category, month, page, pageSize: 20 })
   const deleteExpense = useDeleteExpense()
 
   const setParam = (key: string, value: string) => {
@@ -39,9 +41,8 @@ export default function ExpensesPage() {
     setParams(next, { replace: true })
   }
 
-
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-4xl space-y-8">
       <SeoTitle title="Expenses" description="Everything you spent this month." />
       <PageHeader
         title="Expenses"
@@ -58,15 +59,16 @@ export default function ExpensesPage() {
         }
       />
 
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
-        <div className="min-w-[160px] flex-1 space-y-1.5">
-          <label htmlFor="filter-category" className="text-sm font-medium">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <label htmlFor="filter-category" className="sr-only">
             Category
           </label>
           <Select
             id="filter-category"
             value={category}
-            onChange={(e) => setParam('category', e.target.value)}
+            onValueChange={(value) => setParam('category', value)}
+            className="h-9 w-auto min-w-[11rem]"
           >
             <option value="all">All categories</option>
             {categoryIds.map((id) => (
@@ -78,17 +80,17 @@ export default function ExpensesPage() {
         </div>
 
         {expenses.data ? (
-          <div className="ml-auto text-right">
-            <p className="text-xs text-muted-foreground">Total</p>
-            <MoneyText amount={expenses.data.filteredTotal} size="lg" />
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Total{' '}
+            <MoneyText amount={expenses.data.filteredTotal} size="md" className="font-semibold" />
+          </p>
         ) : null}
       </div>
 
       {expenses.isPending ? (
         <div className="space-y-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 rounded-lg" />
           ))}
         </div>
       ) : expenses.isError ? (
@@ -110,11 +112,25 @@ export default function ExpensesPage() {
           onAction={() => setAddOpen(true)}
         />
       ) : (
-        <ExpenseList
-          expenses={expenses.data.items}
-          onDelete={setPendingDelete}
-          deletingId={deleteExpense.isPending ? pendingDelete?.id : null}
-        />
+        <div
+          className={cn('space-y-4 transition-opacity', expenses.isPlaceholderData && 'opacity-60')}
+        >
+          <ExpenseList
+            expenses={expenses.data.items}
+            onDelete={setPendingDelete}
+            deletingId={deleteExpense.isPending ? pendingDelete?.id : null}
+          />
+          <Pagination
+            page={expenses.data.meta.page}
+            pageSize={expenses.data.meta.pageSize}
+            total={expenses.data.meta.total}
+            onPageChange={(next) => {
+              const nextParams = new URLSearchParams(params)
+              nextParams.set('page', String(next))
+              setParams(nextParams, { replace: true })
+            }}
+          />
+        </div>
       )}
 
       <AddExpenseDialog open={addOpen} onOpenChange={setAddOpen} />
@@ -129,13 +145,12 @@ export default function ExpensesPage() {
             : undefined
         }
       >
-        <div className="flex gap-2">
-          <Button variant="outline" className="flex-1" onClick={() => setPendingDelete(null)}>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setPendingDelete(null)}>
             Keep it
           </Button>
           <Button
             variant="destructive"
-            className="flex-1"
             disabled={deleteExpense.isPending}
             onClick={() => {
               if (!pendingDelete) return

@@ -7,11 +7,18 @@ import {
   currentMonthSavingsByCategory,
   followedRecommendations,
 } from '../fixtures/savings'
-import { nowISO } from '../clock'
-import { extractAmount, extractArea, matchIntent } from '../chat/intents'
+import { daysUntilNextFriday, nowISO } from '../clock'
+import { extractAmount, extractArea, extractProductCategory, matchIntent } from '../chat/intents'
 import { formatINR } from '@/utils/currency'
+import { formatDate } from '@/utils/date'
+import { productCategoryLabels } from '@/features/shop/utils/productCategories'
 import { ok, validationError, withMockBehaviour } from '../http'
+import { currentGroceryComparison, currentGroceryPlanSummary } from '../queries/groceries'
+import { searchHomes } from '../queries/homes'
+import { getProductDetail, searchProducts } from '../queries/products'
+import { listOffers } from '../queries/offers'
 import type { FoodListingSummary } from '@/types/food'
+import type { HomeType } from '@/types/home'
 
 /** Drops the heavy detail fields so chat cards carry only summaries. */
 function toSummary(listing: (typeof db.foodListings)[number]): FoodListingSummary {
@@ -92,28 +99,61 @@ function buildReply(message: string, conversationId: string): ChatReply {
     }
 
     case 'productDeadline': {
-      const cap = amount ?? 2000
+      const lower = message.toLowerCase()
       const shopping = budget.categories.find((c) => c.id === 'shopping')!
-      const affordable = Math.min(cap, shopping.remaining)
+      const category = extractProductCategory(message) ?? undefined
+      const label = category ? productCategoryLabels[category].toLowerCase() : 'options'
+      const cap = amount ?? Math.max(shopping.remaining, 0)
+      // Never search above what is left to spend, unless nothing is left at all.
+      const limit = shopping.remaining > 0 ? Math.min(cap, shopping.remaining) : cap
+      const hasDeadline = /friday|interview|urgent|tomorrow|this week|before/.test(lower)
+      const fridayInDays = daysUntilNextFriday()
+
+      const search = (maxPrice: number) =>
+        searchProducts({ category, maxPrice, sort: 'price' }).filter(
+          (p) => !hasDeadline || p.fastestDeliveryDays <= fridayInDays,
+        )
+
+      // Cheapest first, the same ranking the Shop page uses — never by commission.
+      let matches = search(limit)
+      const widened = matches.length === 0 && shopping.remaining > limit
+      if (widened) matches = search(shopping.remaining)
+
+      const top = matches.slice(0, 3)
+      const best = top[0] ? getProductDetail(top[0].id) : null
+      const bestRow = best?.platforms.find((p) => p.platform === best.bestDealPlatform)
+      const leftAfter = best ? shopping.remaining - best.finalPrice : shopping.remaining
+
+      let text: string
+      if (!best) {
+        text = `I could not find ${label} under ${formatINR(limit)}${hasDeadline ? ' that arrive before Friday' : ''}. You have ${formatINR(shopping.remaining)} left in shopping this month — raising the limit a little, or dropping the delivery deadline, opens up more options.`
+      } else {
+        const offerPart = best.bestOffer
+          ? ` after the ${best.bestOffer.title.replace(/\.$/, '')} offer, down from ${formatINR(best.bestDealBasePrice)}`
+          : ''
+        const deliveryPart = bestRow
+          ? ` It arrives by ${formatDate(bestRow.deliveryBy)}${hasDeadline && bestRow.deliveryDays <= fridayInDays ? ', in time for Friday' : ''}.`
+          : ''
+        text = `${widened ? `Nothing fits under ${formatINR(limit)}, so I looked up to your remaining ${formatINR(shopping.remaining)}. ` : ''}Your best option is the ${best.name} from ${best.brand}: ${formatINR(best.finalPrice)} on ${best.bestDealPlatform}${offerPart}.${deliveryPart} ${best.verdict === 'buyNow' ? 'The price is good right now.' : 'The price usually dips in sales, but with your deadline it is worth buying now.'} That leaves ${formatINR(Math.max(leftAfter, 0))} in your shopping budget this month.`
+      }
+
+      const cards: ChatReply['cards'] = top.map((product) => ({ type: 'product' as const, product }))
+      if (best?.bestOffer) cards.push({ type: 'offer' as const, offer: best.bestOffer })
 
       return {
         ...base,
-        text: `You have ${formatINR(shopping.remaining)} left in your shopping budget this month, so I searched under ${formatINR(affordable)}. The Shop page has the full comparison across platforms, with the best card offer applied and the delivery date checked against your deadline.`,
-        cards: [
-          {
-            type: 'budgetSummary' as const,
-            budget: budget.categories.filter((c) => c.id === 'shopping' || c.id === 'misc'),
-          },
-        ],
+        text,
+        cards,
         agentsUsed: ['concierge', 'budget', 'shopping', 'deals'],
         steps: [
           'Checking your shopping budget…',
-          'Comparing prices across platforms…',
-          'Applying your card offers…',
-          'Checking delivery dates…',
+          `Comparing ${label} under ${formatINR(limit)} across platforms…`,
+          hasDeadline ? 'Keeping only what arrives before Friday…' : 'Checking delivery dates…',
+          'Applying the best offer on your cards…',
         ],
         suggestedFollowUps: [
           'What offers can I use on my cards?',
+          'What is left in my budget?',
           'How much have I saved this month?',
         ],
       }
@@ -146,36 +186,72 @@ function buildReply(message: string, conversationId: string): ChatReply {
 
     case 'groceryPlan': {
       const groceries = budget.categories.find((c) => c.id === 'groceries')!
+      // The same comparison the Groceries page shows, so the numbers always agree.
+      const comparison = currentGroceryComparison()
+      const plan = currentGroceryPlanSummary()
+      const fitsBudget = plan.estimatedTotal <= groceries.remaining
+
       return {
         ...base,
-        text: `You have ${formatINR(groceries.remaining)} left in groceries this month. One monthly stock-up from a bulk store beats several small quick-commerce orders, which carry a delivery and handling fee each time. The Groceries page compares your list across all four store types and shows the cheapest for each item.`,
-        cards: [],
+        text:
+          plan.itemCount === 0
+            ? `Your monthly grocery list is empty. Add your staples on the Groceries page and I will find the cheapest store for each one.`
+            : `Your ${plan.itemCount}-item list costs ${formatINR(plan.estimatedTotal)} if you buy each item where it is cheapest — ${plan.cheapestStoreLabel} is the best single store. Doing it as one monthly bulk order saves ${formatINR(plan.bulkSaving)}, and the same list on quick commerce would cost ${formatINR(comparison.quickCommerceExtra)} more. You have ${formatINR(groceries.remaining)} left in groceries, so this ${fitsBudget ? 'fits comfortably' : 'needs a little trimming'}.`,
+        cards: plan.itemCount === 0 ? [] : [{ type: 'groceryPlan' as const, plan }],
         agentsUsed: ['concierge', 'grocery', 'budget'],
         steps: [
           'Reading your monthly grocery list…',
-          'Comparing store prices…',
-          'Checking bulk versus small orders…',
+          'Comparing prices across four store types…',
+          'Checking bulk packs against small orders…',
+          'Checking your groceries budget…',
         ],
-        suggestedFollowUps: ['How much did I spend on food this month?', 'What am I saving so far?'],
+        suggestedFollowUps: [
+          'How much did I spend on food this month?',
+          'What offers can I use on my cards?',
+          'How much have I saved this month?',
+        ],
       }
     }
 
     case 'homeSearch': {
       const cap = amount ?? 12000
-      const where = area?.name ?? prefs.homeAreaName
+      const lower = message.toLowerCase()
+      const type: HomeType | undefined = /\bpgs?\b/.test(lower)
+        ? 'pg'
+        : /co-?living/.test(lower)
+          ? 'coliving'
+          : /\bflat\b/.test(lower)
+            ? 'sharedFlat'
+            : undefined
+      const typeLabel =
+        type === 'pg' ? 'PGs' : type === 'coliving' ? 'co-living spaces' : type === 'sharedFlat' ? 'shared flats' : 'places'
+      const where = area?.name ?? 'Bangalore'
       const rent = budget.categories.find((c) => c.id === 'rent')!
+
+      // Same query the Homes page runs: cheapest first, sponsored never ranked above cheaper.
+      const matches = searchHomes({ area: area?.id, maxRent: cap, type })
+      const top = matches[0]
+      const freedUp = top ? rent.limit - top.rent : 0
+
+      const text = top
+        ? `I found ${matches.length} ${typeLabel} under ${formatINR(cap)} in ${where}. The cheapest is ${top.name} at ${formatINR(top.rent)} a month${top.foodIncluded ? ' with food included' : ''}, ${top.belowAverage ? `${formatINR(Math.abs(top.differenceFromAverage))} below` : top.differenceFromAverage === 0 ? 'right at' : `${formatINR(top.differenceFromAverage)} above`} the area average.${freedUp > 0 ? ` Against the ${formatINR(rent.limit)} you budget for rent now, that frees up ${formatINR(freedUp)} a month.` : ''}`
+        : `Nothing in ${where} comes in under ${formatINR(cap)} right now. Raising the limit a little, or looking one area over, usually opens up a few options.`
 
       return {
         ...base,
-        text: `You currently budget ${formatINR(rent.limit)} for rent. Looking under ${formatINR(cap)} in ${where} — the Homes page lists bachelor-friendly PGs, co-living spaces and shared flats, each compared against the area average so you can see what is genuinely below market.`,
-        cards: [],
+        text,
+        cards: matches.slice(0, 3).map((home) => ({ type: 'home' as const, home })),
         agentsUsed: ['concierge', 'home', 'budget'],
         steps: [
-          `Searching ${where} for places under ${formatINR(cap)}…`,
-          'Comparing against the area average…',
-          'Checking commute to your tech park…',
+          `Searching ${where} for ${typeLabel} under ${formatINR(cap)}…`,
+          'Comparing each rent against the area average…',
+          'Checking the commute to your tech park…',
         ],
-        suggestedFollowUps: ['How much am I saving this month?', 'What is left in my budget?'],
+        suggestedFollowUps: [
+          'Show me co-living under ₹15,000 near Bellandur',
+          'What is left in my budget?',
+          'How much have I saved this month?',
+        ],
       }
     }
 
@@ -215,14 +291,30 @@ function buildReply(message: string, conversationId: string): ChatReply {
     }
 
     case 'deals': {
-      const cardNames = prefs.cards.map((c) => c.label).join(', ')
+      // Same list the Deals page shows: usable offers only, soonest-ending first.
+      const usable = listOffers({ eligibleOnly: true })
+      const expiring = usable.filter((offer) => offer.expiringSoon)
+      const first = usable[0]
+
+      const text = first
+        ? `You can use ${usable.length} offers on your ${prefs.cards.length} saved cards right now${expiring.length > 0 ? `, and ${expiring.length} end within three days` : ''}. ${first.title} on ${first.platform} ${first.daysLeft <= 0 ? 'ends today' : `has ${first.daysLeft} ${first.daysLeft === 1 ? 'day' : 'days'} left`} — on a ${formatINR(first.example.orderValue)} order you would pay ${formatINR(first.example.finalPrice)}, a real ${first.example.effectivePercent}% off after the cap.`
+        : `None of the live offers work with your saved cards at the moment. Adding a card in Settings, or checking back in a few days, usually turns up something.`
+
       return {
         ...base,
-        text: `You have ${prefs.cards.length} cards saved: ${cardNames}. The Deals page shows every offer you can actually use on them, with the true final price after the discount cap — not the headline percentage.`,
-        cards: [],
+        text,
+        cards: usable.slice(0, 3).map((offer) => ({ type: 'offer' as const, offer })),
         agentsUsed: ['concierge', 'deals'],
-        steps: ['Checking your saved cards…', 'Finding offers you qualify for…'],
-        suggestedFollowUps: ['What is left in my shopping budget?', 'Find me a cheap lunch'],
+        steps: [
+          'Checking your saved cards…',
+          'Finding offers you qualify for…',
+          'Working out the true price after each cap…',
+        ],
+        suggestedFollowUps: [
+          'Formal shoes under ₹1,500 for an interview on Friday',
+          'What is left in my budget?',
+          'Cheapest way to buy groceries this month',
+        ],
       }
     }
 

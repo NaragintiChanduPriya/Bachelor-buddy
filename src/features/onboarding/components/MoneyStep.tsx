@@ -85,13 +85,11 @@ export function MoneyStep({ defaultValues, onBack, onSubmit }: MoneyStepProps) {
         ) : null}
       </div>
 
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={onBack} className="flex-1">
+      <div className="flex items-center justify-between gap-2">
+        <Button type="button" variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button type="submit" className="flex-1">
-          Continue
-        </Button>
+        <Button type="submit">Continue</Button>
       </div>
     </form>
   )

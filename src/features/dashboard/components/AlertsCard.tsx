@@ -15,14 +15,14 @@ export interface AlertsCardProps {
 }
 
 export function AlertsCard({ notifications, now }: AlertsCardProps) {
-  const latest = notifications.slice(0, 4)
+  const latest = notifications.slice(0, 3)
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Bell className="size-4 text-primary" aria-hidden="true" />
+            <Bell className="size-4 text-muted-foreground" aria-hidden="true" />
             Latest from your agents
           </CardTitle>
         </div>

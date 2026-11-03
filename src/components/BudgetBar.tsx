@@ -17,6 +17,8 @@ const labelTone: Record<BudgetCategory['status'], string> = {
 
 export interface BudgetBarProps {
   category: BudgetCategory
+  /** Compact shows only what is left; full adds spent / limit and the percentage. */
+  variant?: 'full' | 'compact'
   className?: string
 }
 
@@ -24,7 +26,7 @@ export interface BudgetBarProps {
  * One category's progress. The percentage and status come from the backend; this only renders.
  * The bar is capped at 100% visually, but an overspend still reads correctly in the text.
  */
-export function BudgetBar({ category, className }: BudgetBarProps) {
+export function BudgetBar({ category, variant = 'full', className }: BudgetBarProps) {
   const reduceMotion = useReducedMotion()
   const width = Math.min(100, Math.max(0, category.percentUsed))
   const overspent = category.remaining < 0
@@ -33,12 +35,32 @@ export function BudgetBar({ category, className }: BudgetBarProps) {
     <div className={cn('space-y-1.5', className)}>
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-sm font-medium">{category.label}</span>
-        <span className="text-sm text-muted-foreground">
-          <MoneyText amount={category.spent} size="sm" />
-          <span aria-hidden="true"> / </span>
-          <span className="sr-only">of</span>
-          <MoneyText amount={category.limit} size="sm" tone="muted" />
-        </span>
+        {variant === 'compact' ? (
+          <span className={cn('text-sm', labelTone[category.status])}>
+            {overspent ? (
+              <>
+                <MoneyText
+                  amount={Math.abs(category.remaining)}
+                  size="sm"
+                  tone="danger"
+                  className="font-medium"
+                />{' '}
+                over
+              </>
+            ) : (
+              <>
+                <MoneyText amount={category.remaining} size="sm" className="font-medium" /> left
+              </>
+            )}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            <MoneyText amount={category.spent} size="sm" />
+            <span aria-hidden="true"> / </span>
+            <span className="sr-only">of</span>
+            <MoneyText amount={category.limit} size="sm" tone="muted" />
+          </span>
+        )}
       </div>
 
       <div
@@ -57,18 +79,21 @@ export function BudgetBar({ category, className }: BudgetBarProps) {
         />
       </div>
 
-      <p className={cn('text-xs', labelTone[category.status])}>
-        {overspent ? (
-          <>
-            <MoneyText amount={Math.abs(category.remaining)} size="sm" tone="danger" /> over budget
-          </>
-        ) : (
-          <>
-            <MoneyText amount={category.remaining} size="sm" tone="muted" /> left ·{' '}
-            {category.percentUsed}% used
-          </>
-        )}
-      </p>
+      {variant === 'compact' ? null : (
+        <p className={cn('text-xs', labelTone[category.status])}>
+          {overspent ? (
+            <>
+              <MoneyText amount={Math.abs(category.remaining)} size="sm" tone="danger" /> over
+              budget
+            </>
+          ) : (
+            <>
+              <MoneyText amount={category.remaining} size="sm" tone="muted" /> left ·{' '}
+              {category.percentUsed}% used
+            </>
+          )}
+        </p>
+      )}
     </div>
   )
 }

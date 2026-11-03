@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { foodService } from '@/lib/api/services/food'
 import { foodKeys } from '@/lib/api/queryKeys'
 import type { FoodFilters } from '@/types/food'
@@ -8,6 +8,8 @@ export function useNearbyFood(filters: FoodFilters) {
     queryKey: foodKeys.nearby(filters),
     queryFn: () => foodService.nearby(filters),
     staleTime: 60_000,
+    // Keep the current page on screen while the next filter or page loads.
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -8,7 +8,7 @@ const highlights = [
   { icon: PiggyBank, text: 'Shows exactly how much you saved each month' },
 ]
 
-export function WelcomeStep({ onNext, onUseDemo }: { onNext: () => void; onUseDemo?: () => void }) {
+export function WelcomeStep({ onNext }: { onNext: () => void }) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -30,15 +30,8 @@ export function WelcomeStep({ onNext, onUseDemo }: { onNext: () => void; onUseDe
         ))}
       </ul>
 
-      <div className="space-y-2">
-        <Button size="lg" className="w-full" onClick={onNext}>
-          Get started
-        </Button>
-        {onUseDemo ? (
-          <Button variant="ghost" size="sm" className="w-full" onClick={onUseDemo}>
-            Use demo user (Arjun)
-          </Button>
-        ) : null}
+      <div className="flex justify-end">
+        <Button onClick={onNext}>Get started</Button>
       </div>
 
       <p className="text-center text-xs text-muted-foreground">Takes about a minute.</p>

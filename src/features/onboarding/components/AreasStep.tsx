@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
@@ -18,7 +18,7 @@ export interface AreasStepProps {
 export function AreasStep({ defaultValues, onBack, onSubmit }: AreasStepProps) {
   const { data, isPending, isError, error, refetch } = useAreas()
   const {
-    register,
+    control,
     handleSubmit,
     watch,
     formState: { errors },
@@ -39,7 +39,7 @@ export function AreasStep({ defaultValues, onBack, onSubmit }: AreasStepProps) {
     return (
       <div className="space-y-4">
         <ErrorState error={error} onRetry={() => void refetch()} />
-        <Button variant="outline" onClick={onBack} className="w-full">
+        <Button variant="outline" onClick={onBack}>
           Back
         </Button>
       </div>
@@ -65,37 +65,55 @@ export function AreasStep({ defaultValues, onBack, onSubmit }: AreasStepProps) {
         <div className="space-y-4">
           <Field label="Where do you live?" error={errors.homeAreaId?.message}>
             {({ id, describedBy, invalid }) => (
-              <Select
-                id={id}
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-                {...register('homeAreaId')}
-              >
-                <option value="">Choose an area</option>
-                {data.areas.map((area) => (
-                  <option key={area.id} value={area.id}>
-                    {area.name}
-                  </option>
-                ))}
-              </Select>
+              <Controller
+                control={control}
+                name="homeAreaId"
+                render={({ field }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    name={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                  >
+                    <option value="">Choose an area</option>
+                    {data.areas.map((area) => (
+                      <option key={area.id} value={area.id}>
+                        {area.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              />
             )}
           </Field>
 
           <Field label="Where do you work?" error={errors.officeAreaId?.message}>
             {({ id, describedBy, invalid }) => (
-              <Select
-                id={id}
-                aria-describedby={describedBy}
-                aria-invalid={invalid}
-                {...register('officeAreaId')}
-              >
-                <option value="">Choose an area</option>
-                {data.areas.map((area) => (
-                  <option key={area.id} value={area.id}>
-                    {area.name}
-                  </option>
-                ))}
-              </Select>
+              <Controller
+                control={control}
+                name="officeAreaId"
+                render={({ field }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    name={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                  >
+                    <option value="">Choose an area</option>
+                    {data.areas.map((area) => (
+                      <option key={area.id} value={area.id}>
+                        {area.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              />
             )}
           </Field>
 
@@ -105,30 +123,37 @@ export function AreasStep({ defaultValues, onBack, onSubmit }: AreasStepProps) {
             hint="Helps us estimate your commute."
           >
             {({ id, describedBy }) => (
-              <Select
-                id={id}
-                aria-describedby={describedBy}
-                {...register('techParkId', {
-                  setValueAs: (value: string) => (value === '' ? null : value),
-                })}
-              >
-                <option value="">Not applicable</option>
-                {parkOptions.map((park) => (
-                  <option key={park.id} value={park.id}>
-                    {park.name} — {park.areaName}
-                  </option>
-                ))}
-              </Select>
+              <Controller
+                control={control}
+                name="techParkId"
+                render={({ field }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    name={field.name}
+                    value={field.value ?? ''}
+                    onValueChange={(value) => field.onChange(value === '' ? null : value)}
+                    onBlur={field.onBlur}
+                  >
+                    <option value="">Not applicable</option>
+                    {parkOptions.map((park) => (
+                      <option key={park.id} value={park.id}>
+                        {park.name} — {park.areaName}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              />
             )}
           </Field>
         </div>
       )}
 
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={onBack} className="flex-1">
+      <div className="flex items-center justify-between gap-2">
+        <Button type="button" variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button type="submit" className="flex-1" disabled={isPending}>
+        <Button type="submit" disabled={isPending}>
           Continue
         </Button>
       </div>

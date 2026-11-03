@@ -3,7 +3,6 @@ import type { DeliveryComparison } from '@/types/food'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MoneyText } from '@/components/MoneyText'
-import { AgentBadge } from '@/components/AgentBadge'
 
 /**
  * The comparison that makes the product's point: the same dish, eaten there versus delivered,
@@ -25,7 +24,6 @@ export function DeliveryCompareCard({ comparison }: { comparison: DeliveryCompar
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Delivery vs eating here</CardTitle>
-          <AgentBadge agent="food" />
         </div>
         <CardDescription>
           Comparing <strong className="text-foreground">{comparison.dish}</strong> at{' '}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { MessageCircleHeart, SendHorizontal } from 'lucide-react'
+import { SendHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '@/components/ErrorState'
 import { ChatMessageItem } from './ChatMessageItem'
@@ -9,9 +9,11 @@ import { cn } from '@/utils/cn'
 
 const starterPrompts = [
   'I have ₹150 and I am hungry near office',
+  'Formal shoes under ₹1,500 for an interview on Friday',
   'How much did I spend on food this month?',
   'Cheapest way to buy groceries this month',
   'Find a PG under ₹10,000 near Marathahalli',
+  'What offers can I use on my cards?',
 ]
 
 export function ChatPanel({ className }: { className?: string }) {
@@ -43,23 +45,15 @@ export function ChatPanel({ className }: { className?: string }) {
     <div className={cn('flex h-full min-h-0 flex-col', className)}>
       <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
         {messages.length === 0 && !isThinking ? (
-          <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-primary/10">
-              <MessageCircleHeart className="size-6 text-primary" aria-hidden="true" />
-            </span>
-            <div className="space-y-1">
-              <p className="font-semibold">Ask Buddy anything about your money</p>
-              <p className="text-sm text-muted-foreground">
-                Your agents know your budget, your areas and what you have spent.
-              </p>
-            </div>
-            <ul className="flex flex-col gap-2">
+          <div className="flex h-full flex-col justify-end gap-3 pb-2">
+            <p className="text-sm font-medium text-muted-foreground">Try asking</p>
+            <ul className="grid gap-2 sm:grid-cols-2">
               {starterPrompts.map((prompt) => (
                 <li key={prompt}>
                   <button
                     type="button"
                     onClick={() => submit(prompt)}
-                    className="rounded-full border border-border bg-card px-4 py-2 text-sm transition-colors hover:border-primary/50 hover:bg-accent"
+                    className="h-full w-full rounded-lg border border-border bg-card px-4 py-3 text-left text-sm transition-colors hover:border-primary/40 hover:bg-accent/60"
                   >
                     {prompt}
                   </button>
@@ -93,7 +87,7 @@ export function ChatPanel({ className }: { className?: string }) {
       </div>
 
       <form
-        className="flex items-end gap-2 border-t border-border bg-background px-1 pt-3"
+        className="flex items-end gap-2 px-1 pt-3"
         onSubmit={(event) => {
           event.preventDefault()
           submit(draft)
@@ -110,9 +104,9 @@ export function ChatPanel({ className }: { className?: string }) {
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={onKeyDown}
           placeholder="Ask about food, budget, deals or a place to live…"
-          className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring"
+          className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-input bg-card px-4 py-2.5 text-sm shadow-card outline-none placeholder:text-muted-foreground focus-visible:border-ring"
         />
-        <Button type="submit" size="icon" disabled={!draft.trim() || isThinking}>
+        <Button type="submit" size="icon" className="size-11 rounded-xl" disabled={!draft.trim() || isThinking}>
           <SendHorizontal aria-hidden="true" />
           <span className="sr-only">Send</span>
         </Button>

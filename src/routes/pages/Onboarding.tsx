@@ -13,20 +13,6 @@ import { availableCards } from '@/features/onboarding/cards'
 import { useOnboardingStore, TOTAL_STEPS } from '@/store/onboardingStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { useCompleteOnboarding } from '@/hooks/useMe'
-import { isMockMode } from '@/lib/env'
-
-/** The demo shortcut fills Arjun's profile from the brief. */
-const demoDraft = {
-  salary: 40000,
-  savingsGoal: 8000,
-  homeAreaId: 'area_hsr',
-  officeAreaId: 'area_bellandur',
-  techParkId: 'park_orbit',
-  foodPreference: 'veg' as const,
-  cards: availableCards.filter((c) =>
-    ['card_hdfc_cc', 'card_sbi_dc', 'card_icici_cc', 'card_axis_dc'].includes(c.id),
-  ),
-}
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
@@ -68,22 +54,16 @@ export default function OnboardingPage() {
     )
   }
 
-  const useDemo = () => {
-    patch(demoDraft)
-    setStep(TOTAL_STEPS)
-    submit({ ...draft, ...demoDraft })
-  }
-
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-10">
       <SeoTitle title="Get started" description="Set up your BachelorBuddy budget." />
 
       <div className="w-full max-w-lg space-y-8">
         <div className="flex items-center justify-center gap-2">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <span className="bg-brand flex size-9 items-center justify-center rounded-xl text-white">
             <Wallet2 className="size-5" aria-hidden="true" />
           </span>
-          <span className="text-lg font-bold tracking-tight">BachelorBuddy</span>
+          <span className="text-lg font-semibold tracking-tight">BachelorBuddy</span>
         </div>
 
         {step < TOTAL_STEPS ? <StepProgress step={step} /> : null}
@@ -105,7 +85,7 @@ export default function OnboardingPage() {
               </button>
             </div>
           ) : step === 0 ? (
-            <WelcomeStep onNext={next} onUseDemo={isMockMode() ? useDemo : undefined} />
+            <WelcomeStep onNext={next} />
           ) : step === 1 ? (
             <MoneyStep
               defaultValues={{

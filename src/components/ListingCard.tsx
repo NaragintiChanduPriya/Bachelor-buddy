@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { MoneyText } from '@/components/MoneyText'
 import { SponsoredTag } from '@/components/SponsoredTag'
 import { formatDistance } from '@/utils/distance'
+import { initialsOf, thumbnailStyle } from '@/utils/thumbnail'
 import { cn } from '@/utils/cn'
 
 const typeLabels: Record<FoodListingSummary['type'], string> = {
@@ -12,14 +13,6 @@ const typeLabels: Record<FoodListingSummary['type'], string> = {
   mess: 'Mess',
   tiffin: 'Tiffin',
   restaurant: 'Restaurant',
-}
-
-/** Gradient thumbnail derived from the seed — no real brand imagery anywhere. */
-function thumbnailStyle(seed: number) {
-  const hue = seed % 360
-  return {
-    background: `linear-gradient(135deg, oklch(0.72 0.12 ${hue}), oklch(0.58 0.14 ${(hue + 48) % 360}))`,
-  }
 }
 
 export interface ListingCardProps {
@@ -31,12 +24,7 @@ export interface ListingCardProps {
 export function ListingCard({ listing, near, className }: ListingCardProps) {
   const distance =
     near === 'office' ? listing.distanceFromOfficeKm : listing.distanceFromHomeKm
-  const initials = listing.name
-    .split(' ')
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
+  const initials = initialsOf(listing.name)
 
   return (
     <article

@@ -10,7 +10,23 @@ import { generateCurrentMonthExpenses } from './fixtures/generateExpenses'
 import { generateFoodListings } from './fixtures/generateFood'
 import { notifications } from './fixtures/notifications'
 import { demoUser } from './fixtures/user'
-import { currentMonthKey } from './clock'
+import { defaultGroceryList } from './fixtures/groceries'
+import { defaultPriceAlerts } from './fixtures/products'
+import { currentMonthKey, nowISO } from './clock'
+
+/** One line of the user's monthly grocery list; prices are looked up from the catalog. */
+export interface GroceryListEntry {
+  itemId: string
+  quantity: number
+}
+
+/** A stored price alert; current price and triggered state are derived on every read. */
+export interface PriceAlertRecord {
+  id: string
+  productId: string
+  targetPrice: number
+  createdAt: string
+}
 
 /**
  * In-memory mock database, built from fixtures at startup. Mutating handlers write here so the
@@ -27,6 +43,9 @@ export interface MockDb {
   expenses: Expense[]
   foodListings: FoodListing[]
   notifications: AgentNotification[]
+  groceryList: GroceryListEntry[]
+  groceryListUpdatedAt: string
+  priceAlerts: PriceAlertRecord[]
   /** Incremented to mint new ids for records created during the session. */
   sequence: number
 }
@@ -41,6 +60,9 @@ function build(): MockDb {
     expenses: generateCurrentMonthExpenses(),
     foodListings: generateFoodListings(),
     notifications: structuredClone(notifications),
+    groceryList: structuredClone(defaultGroceryList),
+    groceryListUpdatedAt: nowISO(),
+    priceAlerts: structuredClone(defaultPriceAlerts),
     sequence: 1000,
   }
 }

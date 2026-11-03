@@ -54,11 +54,13 @@ export default function BudgetPage() {
     : null
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-4xl space-y-8">
       <SeoTitle title="Budget" description="Your monthly category limits." />
       <PageHeader
         title="Budget"
-        description={budget.data ? `Your plan for ${formatMonthLabel(budget.data.month)}` : undefined}
+        description={
+          budget.data ? `Your plan for ${formatMonthLabel(budget.data.month)}` : undefined
+        }
         actions={
           budget.data && !editing ? (
             <Button variant="outline" onClick={startEditing}>
@@ -71,50 +73,51 @@ export default function BudgetPage() {
       {budget.isPending ? (
         <div className="space-y-4">
           <Skeleton className="h-28 rounded-xl" />
-          <Skeleton className="h-96 rounded-xl" />
+          <Skeleton className="h-80 rounded-xl" />
         </div>
       ) : budget.isError ? (
         <ErrorState error={budget.error} onRetry={() => void budget.refetch()} />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardContent className="space-y-1 p-5">
+          <Card>
+            <CardContent className="grid gap-5 p-6 sm:grid-cols-3 sm:divide-x sm:divide-border">
+              <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Monthly salary</p>
-                <MoneyText amount={budget.data.salary} size="xl" />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="space-y-1 p-5">
+                <MoneyText amount={budget.data.salary} size="lg" className="block" />
+              </div>
+              <div className="space-y-1 sm:pl-6">
                 <p className="text-sm text-muted-foreground">Spent so far</p>
-                <MoneyText amount={budget.data.totalSpent} size="xl" />
+                <MoneyText amount={budget.data.totalSpent} size="lg" className="block" />
                 <p className="text-xs text-muted-foreground">
                   {budget.data.percentUsed}% of your plan
                 </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="space-y-1 p-5">
+              </div>
+              <div className="space-y-1 sm:pl-6">
                 <p className="text-sm text-muted-foreground">Still available</p>
-                <MoneyText amount={budget.data.totalRemaining} size="xl" tone="success" />
+                <MoneyText
+                  amount={budget.data.totalRemaining}
+                  size="lg"
+                  tone="success"
+                  className="block"
+                />
                 <p className="text-xs text-muted-foreground">
                   {budget.data.daysLeftInMonth} days left
                 </p>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Wallet className="size-4 text-primary" aria-hidden="true" />
+                <Wallet className="size-4 text-muted-foreground" aria-hidden="true" />
                 {editing ? 'Adjust your category limits' : 'Category budgets'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
               {editing ? (
                 <>
-                  <div className="space-y-3">
+                  <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
                     {budget.data.categories.map((category) => (
                       <div key={category.id} className="flex items-center gap-3">
                         <label
@@ -180,23 +183,21 @@ export default function BudgetPage() {
                     </p>
                   ) : null}
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1" onClick={cancelEditing}>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={cancelEditing}>
                       Cancel
                     </Button>
-                    <Button
-                      className="flex-1"
-                      disabled={overBudget || updateBudget.isPending}
-                      onClick={save}
-                    >
+                    <Button disabled={overBudget || updateBudget.isPending} onClick={save}>
                       {updateBudget.isPending ? 'Saving…' : 'Save limits'}
                     </Button>
                   </div>
                 </>
               ) : (
-                budget.data.categories.map((category) => (
-                  <BudgetBar key={category.id} category={category} />
-                ))
+                <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2">
+                  {budget.data.categories.map((category) => (
+                    <BudgetBar key={category.id} category={category} />
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>

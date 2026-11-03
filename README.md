@@ -48,9 +48,32 @@ Copy `.env.example`. Three variables control everything:
 | `VITE_API_BASE_URL` | `/api` | Base URL for every API call |
 | `VITE_API_MOCKING` | `enabled` | `enabled` starts MSW before render; `disabled` talks to a real backend |
 | `VITE_MOCK_FAILURE_RATE` | `0.03` | Fraction of mock calls that fail, to exercise error states. `0` disables |
+| `VITE_QUERY_DEVTOOLS` | `false` | `true` shows the TanStack Query Devtools launcher in development only |
 
 `.env.production` ships with `VITE_MOCK_FAILURE_RATE=0` so a hosted demo never shows a random
 failure, while local development keeps the 3% rate honest.
+
+---
+
+## What's in the app
+
+| Route | What it does |
+|---|---|
+| `/onboarding` | Four steps: welcome, salary and goal, home and office areas, food and cards |
+| `/` | Money left this month, the categories closest to their limit, savings, alerts, a cheap lunch nearby |
+| `/chat` | Ask Buddy — the agents answer with live budget, food, product, home, offer and grocery data |
+| `/food`, `/food/:id` | Cheap meals near home or office; delivery-vs-eating-there fee breakdown |
+| `/groceries` | Editable monthly list priced at four store types, with the bulk-order saving |
+| `/shop`, `/shop/:id` | Prices across three platforms, 90-day history, buy-now-or-wait verdict, price alerts |
+| `/deals` | Card offers, coupons and cashback the user can use, each with the true final price |
+| `/homes`, `/homes/:id` | PGs, co-living and shared flats against the area average, with commute times |
+| `/savings` | This month against the goal, by category and by recommendation, a six-month trend, PNG export |
+| `/expenses`, `/budget` | Paginated expense list with add and delete; category limits |
+| `/notifications`, `/settings` | Agent alerts grouped by day; profile, places, food, cards and theme |
+
+Every list is paginated server-side and keeps the previous page on screen while the next loads;
+every data view has a skeleton, an empty state and an error state with retry; every route is
+lazy-loaded behind its own error boundary.
 
 ---
 
@@ -100,6 +123,7 @@ backend can be written against the same shapes and the same money logic.
 | `db.ts` | In-memory database built from fixtures; optional `sessionStorage` persistence |
 | `fixtures/` | Raw seed data |
 | `calc/` | **All money math.** Pure, named, unit-tested — the logic the real backend reimplements |
+| `queries/` | Database reads shared by the handlers and the chat agents, so both always agree |
 | `handlers/` | One MSW handler file per domain |
 | `http.ts` | Envelope helpers, latency, random failure, pagination, query-param parsing |
 | `browser.ts` | Worker setup |
@@ -124,8 +148,9 @@ backend can be written against the same shapes and the same money logic.
 ### Live mutations
 
 Mutations write to the in-memory database, so the session feels real: logging an expense changes
-budget remaining, the category bars, the expense list and savings on the next fetch. The
-database can persist to `sessionStorage`, and Settings offers "Reset demo data" in mock mode.
+budget remaining, the category bars, the expense list and savings on the next fetch. Grocery
+list edits, price alerts and read notifications work the same way. The database persists to
+`sessionStorage` for the tab; closing the tab starts fresh.
 
 ### Brand names
 

@@ -1,26 +1,33 @@
 import { Link } from 'react-router-dom'
-import { MessageCircleHeart, Plus, UtensilsCrossed } from 'lucide-react'
+import { MessageCircleHeart, Plus, ShoppingBag, UtensilsCrossed } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+/** A quiet row of the four things people do most, so the dashboard stays about the numbers. */
 export function QuickActions({ onLogExpense }: { onLogExpense: () => void }) {
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-      <Button asChild size="lg">
+    <nav aria-label="Quick actions" className="flex flex-wrap gap-2">
+      <Button asChild>
         <Link to="/chat">
           <MessageCircleHeart aria-hidden="true" />
           Ask Buddy
         </Link>
       </Button>
-      <Button variant="outline" size="lg" onClick={onLogExpense}>
+      <Button variant="outline" onClick={onLogExpense}>
         <Plus aria-hidden="true" />
         Log expense
       </Button>
-      <Button asChild variant="outline" size="lg">
+      <Button asChild variant="outline">
         <Link to="/food?near=office">
           <UtensilsCrossed aria-hidden="true" />
           Find food
         </Link>
       </Button>
-    </div>
+      <Button asChild variant="outline">
+        <Link to="/shop">
+          <ShoppingBag aria-hidden="true" />
+          Compare prices
+        </Link>
+      </Button>
+    </nav>
   )
 }

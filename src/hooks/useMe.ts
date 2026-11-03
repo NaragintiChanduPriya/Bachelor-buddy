@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { userService, type OnboardingPayload } from '@/lib/api/services/user'
-import { budgetKeys, savingsKeys, userKeys } from '@/lib/api/queryKeys'
+import { budgetKeys, homeKeys, offerKeys, productKeys, savingsKeys, userKeys } from '@/lib/api/queryKeys'
 
 export function useMe() {
   return useQuery({
@@ -33,6 +33,10 @@ export function useUpdatePreferences() {
       // Salary or goal changes regenerate the budget split server-side.
       void queryClient.invalidateQueries({ queryKey: budgetKeys.all })
       void queryClient.invalidateQueries({ queryKey: savingsKeys.all })
+      // Cards change which offers apply; the tech park changes commute distances.
+      void queryClient.invalidateQueries({ queryKey: offerKeys.all })
+      void queryClient.invalidateQueries({ queryKey: productKeys.all })
+      void queryClient.invalidateQueries({ queryKey: homeKeys.all })
     },
   })
 }

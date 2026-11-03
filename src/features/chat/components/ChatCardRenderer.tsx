@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom'
+import { ArrowRight, ShoppingCart } from 'lucide-react'
 import type { ChatCard } from '@/types/chat'
 import { ListingCard } from '@/components/ListingCard'
 import { BudgetBar } from '@/components/BudgetBar'
 import { MoneyText } from '@/components/MoneyText'
-import { Badge } from '@/components/ui/badge'
+import { ProductCard } from '@/components/ProductCard'
+import { HomeCard } from '@/components/HomeCard'
+import { OfferChip } from '@/components/OfferChip'
 import { Card, CardContent } from '@/components/ui/card'
 import type { BudgetCategory } from '@/types/budget'
 
@@ -26,49 +29,26 @@ export function ChatCardRenderer({ card }: { card: ChatCard }) {
       )
 
     case 'product':
-      return (
-        <Card>
-          <CardContent className="space-y-1 p-4">
-            <div className="flex items-start justify-between gap-2">
-              <Link to={`/shop/${card.product.id}`} className="font-medium hover:underline">
-                {card.product.name}
-              </Link>
-              {card.product.sponsored ? <Badge variant="muted">Sponsored</Badge> : null}
-            </div>
-            <p className="text-sm text-muted-foreground">{card.product.brand}</p>
-            <MoneyText amount={card.product.lowestPrice} size="lg" tone="primary" />
-            <p className="text-xs text-muted-foreground">
-              Cheapest on {card.product.cheapestPlatform}
-            </p>
-          </CardContent>
-        </Card>
-      )
+      return <ProductCard product={card.product} compact />
 
     case 'home':
-      return (
-        <Card>
-          <CardContent className="space-y-1 p-4">
-            <Link to={`/homes/${card.home.id}`} className="font-medium hover:underline">
-              {card.home.name}
-            </Link>
-            <p className="text-sm text-muted-foreground">
-              {card.home.typeLabel} in {card.home.areaName}
-            </p>
-            <MoneyText amount={card.home.rent} size="lg" tone="primary" />
-            <span className="text-sm text-muted-foreground"> a month</span>
-          </CardContent>
-        </Card>
-      )
+      return <HomeCard home={card.home} />
 
     case 'offer':
       return (
         <Card>
-          <CardContent className="space-y-1 p-4">
-            <p className="font-medium">{card.offer.title}</p>
-            <p className="text-sm text-muted-foreground">{card.offer.description}</p>
-            <Badge variant={card.offer.expiringSoon ? 'warning' : 'muted'}>
-              {card.offer.daysLeft} days left
-            </Badge>
+          <CardContent className="space-y-2 p-4">
+            <OfferChip offer={card.offer} />
+            <p className="text-sm font-medium">{card.offer.title}</p>
+            <p className="text-sm text-muted-foreground">
+              On a <MoneyText amount={card.offer.example.orderValue} size="sm" /> order you pay{' '}
+              <MoneyText amount={card.offer.example.finalPrice} size="sm" tone="primary" className="font-semibold" />{' '}
+              (save <MoneyText amount={card.offer.example.discount} size="sm" tone="success" />).
+            </p>
+            <Link to="/deals" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+              All your offers
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
           </CardContent>
         </Card>
       )
@@ -76,13 +56,23 @@ export function ChatCardRenderer({ card }: { card: ChatCard }) {
     case 'groceryPlan':
       return (
         <Card>
-          <CardContent className="space-y-1 p-4">
-            <p className="font-medium">{card.plan.itemCount} items this month</p>
-            <MoneyText amount={card.plan.estimatedTotal} size="lg" tone="primary" />
-            <p className="text-sm text-muted-foreground">
-              Cheapest at {card.plan.cheapestStoreLabel} · bulk saves{' '}
-              <MoneyText amount={card.plan.bulkSaving} size="sm" tone="success" />
+          <CardContent className="space-y-2 p-4">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <ShoppingCart className="size-4 text-muted-foreground" aria-hidden="true" />
+              {card.plan.itemCount} items on your monthly list
             </p>
+            <MoneyText amount={card.plan.estimatedTotal} size="lg" tone="primary" className="block" />
+            <p className="text-sm text-muted-foreground">
+              Best single store: {card.plan.cheapestStoreLabel} · a bulk order saves{' '}
+              <MoneyText amount={card.plan.bulkSaving} size="sm" tone="success" className="font-semibold" />
+            </p>
+            <Link
+              to="/groceries"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              Compare every store
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
           </CardContent>
         </Card>
       )

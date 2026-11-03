@@ -1,14 +1,31 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function onboardAsDemoUser(page: Page) {
-  await page.goto('/')
-  await page.getByRole('button', { name: /Use demo user/ }).click()
+/**
+ * Signs up as Arjun through the real four-step onboarding, leaving the browser on the
+ * dashboard. Each test gets a fresh context, so this runs per test.
+ */
+async function onboardAsArjun(page: Page) {
+  await page.goto('/onboarding')
+  await page.getByRole('button', { name: 'Get started' }).click()
+  await page.getByLabel(/Monthly salary/).fill('40000')
+  await page.getByLabel(/savings goal/i).fill('8000')
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await page.getByLabel('Where do you live?').click()
+  await page.getByRole('option', { name: 'HSR Layout', exact: true }).click()
+  await page.getByLabel('Where do you work?').click()
+  await page.getByRole('option', { name: 'Bellandur', exact: true }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await page
+    .getByRole('radio', { name: /Vegetarian/ })
+    .first()
+    .check()
+  await page.getByRole('button', { name: /Create my budget/ }).click()
   await expect(page.getByText('left this month')).toBeVisible({ timeout: 30_000 })
 }
 
 test.describe('food', () => {
   test('lists places and filters through the URL', async ({ page }) => {
-    await onboardAsDemoUser(page)
+    await onboardAsArjun(page)
     await page.goto('/food')
 
     await expect(page.getByRole('heading', { name: 'Food', level: 1 })).toBeVisible()
@@ -17,13 +34,14 @@ test.describe('food', () => {
     await page.getByRole('tab', { name: 'Mess' }).click()
     await expect(page).toHaveURL(/type=mess/)
 
-    await page.getByLabel('Near').selectOption('office')
+    await page.getByLabel('Near').click()
+    await page.getByRole('option', { name: 'Near my office' }).click()
     await expect(page).toHaveURL(/near=office/)
     await expect(page.getByText(/places near your office/)).toBeVisible({ timeout: 30_000 })
   })
 
   test('shows the full delivery fee breakdown and what it saves', async ({ page }) => {
-    await onboardAsDemoUser(page)
+    await onboardAsArjun(page)
     // Annapoorna Mess delivers, so the comparison applies.
     await page.goto('/food/food_003')
 
@@ -33,14 +51,20 @@ test.describe('food', () => {
     await expect(page.getByText('Delivery vs eating here')).toBeVisible()
 
     // Every fee is itemised, not just a total.
-    for (const row of ['Item price on the app', 'Delivery fee', 'Platform fee', 'Packaging fee', 'Taxes']) {
+    for (const row of [
+      'Item price on the app',
+      'Delivery fee',
+      'Platform fee',
+      'Packaging fee',
+      'Taxes',
+    ]) {
       await expect(page.getByRole('row', { name: new RegExp(row) })).toBeVisible()
     }
     await expect(page.getByText(/Eating here saves/)).toBeVisible()
   })
 
   test('explains when a place does not deliver', async ({ page }) => {
-    await onboardAsDemoUser(page)
+    await onboardAsArjun(page)
     // Office Street Mess is lunch-only and does not deliver.
     await page.goto('/food/food_011')
 
@@ -50,7 +74,7 @@ test.describe('food', () => {
 
 test.describe('ask buddy', () => {
   test('answers a food question with cards and agent badges', async ({ page }) => {
-    await onboardAsDemoUser(page)
+    await onboardAsArjun(page)
     await page.goto('/chat')
 
     await page.getByRole('button', { name: 'I have ₹150 and I am hungry near office' }).click()
@@ -65,7 +89,7 @@ test.describe('ask buddy', () => {
   })
 
   test('quotes the same food spend the budget page shows', async ({ page }) => {
-    await onboardAsDemoUser(page)
+    await onboardAsArjun(page)
     await page.goto('/chat')
 
     await page.locator('#chat-input').fill('How much did I spend on food this month?')
@@ -75,13 +99,11 @@ test.describe('ask buddy', () => {
     await expect(page.getByText(/You have spent ₹5,250 on food this month/)).toBeVisible({
       timeout: 30_000,
     })
-    await expect(
-      page.getByRole('progressbar', { name: 'Food: 70% of budget used' }),
-    ).toBeVisible()
+    await expect(page.getByRole('progressbar', { name: 'Food: 70% of budget used' })).toBeVisible()
   })
 
   test('falls back helpfully on an unrecognised question', async ({ page }) => {
-    await onboardAsDemoUser(page)
+    await onboardAsArjun(page)
     await page.goto('/chat')
 
     await page.locator('#chat-input').fill('what is the weather today')
@@ -90,14 +112,14 @@ test.describe('ask buddy', () => {
     await expect(page.getByText(/I can help with four things/)).toBeVisible({ timeout: 30_000 })
   })
 
-  test('opens the same chat in a side sheet from another page', async ({ page }) => {
-    await onboardAsDemoUser(page)
+  test('reaches Ask Buddy from the sidebar', async ({ page }) => {
+    await onboardAsArjun(page)
 
-    await page.getByRole('button', { name: 'Ask Buddy' }).click()
-    const sheet = page.getByRole('dialog', { name: 'Ask Buddy' })
-    await expect(sheet).toBeVisible()
-
-    await page.keyboard.press('Escape')
-    await expect(sheet).toBeHidden()
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'Ask Buddy' })
+      .click()
+    await expect(page).toHaveURL(/\/chat$/)
+    await expect(page.getByRole('heading', { name: 'Ask Buddy', level: 1 })).toBeVisible()
   })
 })

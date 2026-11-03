@@ -6,11 +6,12 @@ export type Theme = 'light' | 'dark' | 'system'
 interface UiState {
   theme: Theme
   sidebarCollapsed: boolean
-  chatSheetOpen: boolean
+  /** The sidebar as a drawer on screens without the fixed sidebar. Never persisted. */
+  mobileNavOpen: boolean
   setTheme: (theme: Theme) => void
   toggleSidebar: () => void
   setSidebarCollapsed: (collapsed: boolean) => void
-  setChatSheetOpen: (open: boolean) => void
+  setMobileNavOpen: (open: boolean) => void
 }
 
 export const useUiStore = create<UiState>()(
@@ -18,11 +19,11 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       theme: 'system',
       sidebarCollapsed: false,
-      chatSheetOpen: false,
+      mobileNavOpen: false,
       setTheme: (theme) => set({ theme }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
-      setChatSheetOpen: (chatSheetOpen) => set({ chatSheetOpen }),
+      setMobileNavOpen: (mobileNavOpen) => set({ mobileNavOpen }),
     }),
     {
       name: 'bb-ui',

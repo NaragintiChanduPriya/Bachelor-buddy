@@ -29,7 +29,7 @@ export function ThinkingState() {
       role="status"
       aria-live="polite"
       aria-label="Buddy is thinking"
-      className="max-w-[85%] space-y-2 rounded-2xl rounded-tl-sm border border-border bg-card p-4"
+      className="space-y-2 py-1"
     >
       <ul className="space-y-2">
         {placeholderSteps.slice(0, visible).map((step, index) => {
